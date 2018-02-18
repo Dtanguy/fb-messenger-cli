@@ -1,3 +1,5 @@
+
+
 const crypt = require('./crypt.js');
 const Messenger = require('./messenger.js');
 const { refreshConsole } = require('./util.js');
@@ -54,6 +56,9 @@ function InteractiveCli() {
     this.threadHistory = [];
 }
 
+
+
+/*
 function getDisplayName(author) {
     let colorPosition = 0;
 
@@ -182,20 +187,21 @@ function renderMessage(author, message) {
 
     return msg;
 }
+*/
 
+/*
 InteractiveCli.prototype.initializeConversationViewFromFbid = function(id) {
     const user = messenger.users[id];
 
     listeners.getThreadInfo(id, (err, threadInfo) => {
         if (err) {
             console.log(err);
-            console.log('Looking up conversation with id only');
-            currentConversation = undefined;
-            this.currentConversationId = id;
-        } else {
-            currentConversation = threadInfo;
-            this.currentConversationId = threadInfo.thread_fbid;
+            console.log('Exiting...');
+            process.exit(1);
         }
+
+        currentConversation = threadInfo;
+        this.currentConversationId = threadInfo.thread_fbid;
 
         // Unread messages in heading
         heading.clearUnread(id);
@@ -241,6 +247,7 @@ InteractiveCli.prototype.initializeConversationViewFromFbid = function(id) {
         });
     });
 };
+*/
 
 InteractiveCli.prototype.readPullMessage = function(message) {
     if (message.type === 'msg') {
@@ -293,23 +300,17 @@ InteractiveCli.prototype.readPullMessage = function(message) {
 
         interactive.threadHistory.push(msg);
         interactive.printThread();
-
-    } else if (message.type === 'typ' && message.st && this.currentConversation && !this.currentConversation.isGroup) {
+    } else if (message.type === 'typ' && message.st && !this.currentConversation.isGroup) {
         // Someone is typing
         if (message.to === parseInt(current_userId) && message.from === parseInt(recipientId)) {
-            // st === 1 is started typing
-            if (message.st) {
-                interactive.printThread();
-                console.log(`\n${messenger.users[recipientId].name} started typing...`);
-                rlInterface.prompt(true);
-            } else {
-                // Clear the message if he stopped typing
-                interactive.printThread();
-            }
+            interactive.printThread();
+            console.log(`\n${messenger.users[recipientId].name} started typing...`);
+            rlInterface.prompt(true);
         }
     }
 };
 
+/*
 InteractiveCli.prototype.printThread = function(){
     refreshConsole();
     const w = process.stdout.columns - 1;
@@ -338,7 +339,9 @@ InteractiveCli.prototype.printThread = function(){
     console.log(linesToWrite.join('\n'));
     rlInterface.prompt(true);
 };
+*/
 
+/*
 InteractiveCli.prototype.handleCommands = function(command) {
     command = command.toLowerCase().trim();
     const options = command.split(' ');
@@ -457,6 +460,8 @@ InteractiveCli.prototype.handleCommands = function(command) {
             rlInterface.prompt(true);
     }
 };
+*/
+
 
 InteractiveCli.prototype.handler = function(value) {
     const text = value.toString();

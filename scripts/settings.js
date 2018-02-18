@@ -21,7 +21,6 @@ class Settings {
             timestampOptions: {},
             twoFactorAuth: false,
             headlessLogin: true,
-            noSandbox: false,
             logonTimeout: 86400000 // 24hrs in ms
         };
     }

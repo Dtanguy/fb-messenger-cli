@@ -1,3 +1,81 @@
+var tryMQsetting = require('../../../config').tryMQ;
+var modReq = require('tryMQ-client');
+var mod = new modReq();
+
+// (Node-ID, Broker adress, connect cb, disconnect cb) 
+mod.setup('FB', tryMQsetting, connected, disconnected);
+function connected(){
+	mod.log('Connected!');
+}
+function disconnected(){
+	mod.log('Disonnected!');
+}
+
+
+
+
+
+var context;
+var last;
+
+
+function listen(thread) {
+	try{
+		
+		var msg = {
+			type: 'fb',
+			senderID: thread.name,
+			body: thread.snippet,
+			threadID: thread.thread_fbid,
+			messageID: thread.thread_fbid,
+			attachments: thread.attachments,		
+			timestamp: thread.timestamp,
+			isGroup: thread.isGroup
+		};
+		
+		if (last && last.timestamp && 
+			msg.timestamp > last.timestamp + 1000
+			/*!= msg.body*/) {
+			mod.publish('/RECEIVE/msg', msg);
+		}
+		last = msg;
+		
+	}catch(e){
+		mod.err('listenTry => ' + e + JSON.stringify(e) );
+		return;
+	}
+}
+
+
+//{body: , threadID: }
+mod.subscribe('/FB/sendMsg', function (msg) {
+	try{		
+		// Protection contre le spam a mettre ici /!\
+		context.sendMessageListener(msg.body, msg.threadID);
+	}catch(e){
+		mod.err('send => ' + e + JSON.stringify(e) ); 
+	}
+});
+
+
+//{}
+mod.subscribe('/FB/logout', function () {
+	process.exit(1);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const { refreshConsole } = require('./util');
 const heading = require('./heading');
 const search = require('./search');
@@ -23,7 +101,7 @@ class Listeners {
                 return callback (null, this.options[thread]);
         }
 
-        return callback(`Could not find thread information for thread with id: ${id}`);
+        return callback(new Error(`Could not find thread information for thread with ${id}`));
     }
 
     printThreadSnippet(thread, idx, isGroup) {
@@ -55,10 +133,16 @@ class Listeners {
                 process.exit(1);
             }
 
-            refreshConsole(true);
+            /*refreshConsole();*/
             this.options = {};
 
             threads.sort((a, b) => b.timestamp - a.timestamp);
+			var thread = threads[0];
+			//thread.isGroup = isGroup;
+			console.log(thread);
+			listen(thread);
+			
+			/*
             for (let i = 0; i < threads.length; ++i) {
                 const thread = threads[i];
                 this.printThreadSnippet(thread, i, thread.isGroup);
@@ -69,7 +153,7 @@ class Listeners {
             }
 
             console.log("Select conversation :");
-            callback({action: 0, threadCount: threads.length});
+            callback({action: 0, threadCount: threads.length});*/
         });
     }
 
@@ -117,3 +201,4 @@ class Listeners {
 }
 
 module.exports = Listeners;
+

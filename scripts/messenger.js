@@ -318,39 +318,39 @@ class Messenger {
 
             if (body) {
                 const results = this.cleanGraphQl(body);
+
                 // Check we actually have messages
-                if (results.o0 && results.o0.data) {
-                    const thread = results.o0.data.message_thread;
-                    if (thread) {
-                        const messages = thread.messages.nodes;
+                if (!results.o0)
+                    return callback(new Error('No messages found'), []);
+                const thread = results.o0.data.message_thread;
+                const messages = thread.messages.nodes;
 
-                        const data = [];
-                        if (messages !== undefined) {
-                            for (const message in messages) {
-                                const m = messages[message];
+                const data = [];
+                if (messages !== undefined) {
+                    for (const message in messages) {
+                        const m = messages[message];
 
-                                const obj = {
-                                    'author': m.message_sender.id,
-                                    'body': m.message ? m.message.text : m.snippet,
-                                    'other_user_fbid': thread.thread_key.other_user_fbid,
-                                    'thread_fbid': thread.thread_key.thread_fbid,
-                                    'timestamp': m.timestamp_precise
-                                };
+                        const obj = {
+                            'author': m.message_sender.id,
+                            'body': m.message ? m.message.text : m.snippet,
+                            'other_user_fbid': thread.thread_key.other_user_fbid,
+                            'thread_fbid': thread.thread_key.thread_fbid,
+                            'timestamp': m.timestamp_precise
+                        };
 
-                                if (m.extensible_attachment)
-                                    obj.storyAttachment = m.extensible_attachment.story_attachment;
+                        if (m.extensible_attachment)
+                            obj.storyAttachment = m.extensible_attachment.story_attachment;
 
-                                if (m.blob_attachments) {
-                                    obj.attachment = m.blob_attachments[0];
-                                }
-                                data.push(obj);
-                            }
+                        if (m.blob_attachments) {
+                            obj.attachment = m.blob_attachments[0];
                         }
-                        return callback(err, data);
+                        data.push(obj);
                     }
                 }
+                return callback(err, data);
             }
-            return callback(new Error('Could not fetch thread messages'));
+
+            callback(new Error('Could not fetch thread messages'));
         });
     }
 
@@ -384,15 +384,14 @@ class Messenger {
     getThreadNameFromParticipants(thread) {
         // Get name from convo participants
         const participants = thread.all_participants.nodes;
-        const otherParticipants = participants.filter(participant => { return participant.messaging_actor.id !== this.userId;});
-        let threadName = otherParticipants.reduce((reducer, participant) => {
-            return `${reducer}${participant.messaging_actor.short_name}, `;
-        }, '');
-
+        let threadName = '';
+        for (let i=0; i < 3; i++) {
+            threadName += `${participants[i].messaging_actor.short_name}, `;
+        }
         threadName = threadName.slice(0, -2);
 
-        if (threadName.length > 40)
-            threadName = `${threadName.substring(0, 40)}...`;
+        if (participants.length > 3)
+            threadName += '...';
 
         return threadName;
     }
@@ -404,10 +403,8 @@ class Messenger {
             const isGroup = thread.thread_type === 'GROUP';
             let name;
 
-            if (thread.name) {
-                name = thread.name;
-            } else if (isGroup) {
-                name = this.getThreadNameFromParticipants(thread);
+            if (isGroup) {
+                name = thread.name || this.getThreadNameFromParticipants(thread);
             } else {
                 // No nicknames for now
                 for (const participant of thread.all_participants.nodes) {
@@ -415,7 +412,6 @@ class Messenger {
                         name = participant.messaging_actor.name;
                 }
             }
-
             return {
                 name,
                 isGroup,
